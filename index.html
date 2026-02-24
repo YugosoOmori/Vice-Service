@@ -162,7 +162,7 @@
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const firebaseConfig = {
+     const firebaseConfig = {
   apiKey: "AIzaSyB9xuQD_cvxult5OoRqnrxFbnV4GRqKyNY",
   authDomain: "vice-service.firebaseapp.com",
   projectId: "vice-service",
@@ -186,17 +186,19 @@
     window.initiateBooking = (type) => {
         activeServiceType = type;
         document.getElementById('bookingModal').style.display = 'flex';
-        // Auto-fill name if user is logged in
+        
+        // Handle name input visibility based on login status
         if (currentUserData) {
             document.getElementById('orderName').value = currentUserData.username;
             document.getElementById('orderName').style.display = 'none';
         } else {
+            document.getElementById('orderName').value = "";
             document.getElementById('orderName').style.display = 'block';
         }
         document.getElementById('mainWA').classList.add('wa-pop');
     };
 
-    // Unified Booking logic
+    // Unified Fixed Booking logic
     document.getElementById('confirmOrderBtn').onclick = async () => {
         const model = document.getElementById('orderModel').value;
         const notes = document.getElementById('orderNotes').value;
@@ -206,10 +208,19 @@
         if(!name) return alert("Te rugăm să introduci numele!");
         if(!model) return alert("Introdu modelul dispozitivului!");
 
-        const orderId = auth.currentUser ? auth.currentUser.uid : "g_" + Date.now();
+        // Generate a unique ID for guest or use User UID
+        const orderId = auth.currentUser ? auth.currentUser.uid : "guest_" + Date.now();
         
+        const message = encodeURIComponent(
+            `Salut! Sunt ${name}.\n` + 
+            `Dispozitiv: ${activeServiceType}\n` + 
+            `Model: ${model}\n` + 
+            `Problemă: ${notes}\n\n` + 
+            `*Sunt de acord că prețul componentelor se achită separat de manoperă.*`
+        );
+
         try {
-            // Save to Firebase
+            // Attempt to save to Firebase
             await setDoc(doc(db, "orders", orderId), { 
                 type: activeServiceType, 
                 model: model,
@@ -217,23 +228,16 @@
                 status: "În Lucru", 
                 timestamp: Date.now() 
             });
-
-            const message = encodeURIComponent(
-                `Salut! Sunt ${name}.\n` +
-                `Dispozitiv: ${activeServiceType}\n` +
-                `Model: ${model}\n` +
-                `Problemă: ${notes}\n\n` +
-                `*Sunt de acord că prețul componentelor se achită separat de manoperă.*`
-            );
-            
-            window.open(`https://wa.me/0786047803?text=${message}`, '_blank');
-            
-            document.getElementById('bookingModal').style.display = 'none';
-            document.getElementById('mainWA').classList.remove('wa-pop');
         } catch (e) {
-            console.error("Error saving order: ", e);
-            alert("A apărut o eroare. Te rugăm să încerci din nou.");
+            console.warn("Database save failed, but proceeding to WhatsApp:", e);
+            // We proceed even if save fails so the user doesn't get stuck
         }
+
+        // Always open WhatsApp window
+        window.open(`https://wa.me/0786047803?text=${message}`, '_blank');
+        
+        document.getElementById('bookingModal').style.display = 'none';
+        document.getElementById('mainWA').classList.remove('wa-pop');
     };
 
     window.toggleAuth = () => {
