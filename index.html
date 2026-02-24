@@ -20,14 +20,21 @@
         .price-card:hover { border-color: var(--primary); transform: translateY(-5px); }
         .price-card .cost { font-size: 2.5rem; font-weight: 800; color: var(--secondary); margin: 20px 0; }
 
+        /* Review Section Styles */
+        .reviews-section { padding: 80px 10%; background: #080808; }
+        .review-box { background: var(--card); padding: 20px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #222; }
+        .review-form { background: #111; padding: 30px; border-radius: 20px; margin-bottom: 40px; border: 1px solid var(--primary); display: none; }
+        .stars { color: #f1c40f; margin-bottom: 10px; }
+
         .panel { background: #111; padding: 40px; border-radius: 20px; border: 1px solid var(--primary); margin: 120px 10% 20px; display: none; }
-        .btn-p { background: var(--primary); color: white; border: none; padding: 14px; cursor: pointer; font-weight: bold; border-radius: 8px; width: 100%; transition: 0.3s; }
+        .btn-p { background: var(--primary); color: white; border: none; padding: 14px; cursor: pointer; font-weight: bold; border-radius: 8px; width: 100%; transition: 0.3s; margin-top: 10px; }
+        .btn-p:hover { opacity: 0.8; }
 
         #authModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; justify-content:center; align-items:center; }
         .modal-content { background:#161616; padding:40px; border-radius:24px; border: 1px solid #333; width:320px; text-align:center; position: relative; }
         .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #555; }
-        .close-btn:hover { color: white; }
-        input { width: 100%; padding: 15px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 10px; box-sizing: border-box; }
+        
+        input, textarea, select { width: 100%; padding: 15px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 10px; box-sizing: border-box; }
         
         .badge { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; border: 1px solid; }
         .bg-work { color: var(--secondary); border-color: var(--secondary); }
@@ -40,6 +47,7 @@
     <div class="logo">VICE SERVICE</div>
     <nav>
         <a href="#services">Servicii</a>
+        <a href="#reviews">Recenzii</a>
         <a onclick="window.openModal()" id="loginNavBtn" style="color: var(--primary); border: 1px solid; padding: 5px 15px; border-radius: 5px;">Cont Client</a>
     </nav>
 </header>
@@ -84,6 +92,24 @@
     </div>
 </section>
 
+<section class="reviews-section" id="reviews">
+    <h2 style="text-align: center; margin-bottom: 40px;">Ce spun clienții</h2>
+    
+    <div id="reviewForm" class="review-form">
+        <h3>Lasă o recenzie</h3>
+        <select id="revStars">
+            <option value="5">⭐⭐⭐⭐⭐ (Excelent)</option>
+            <option value="4">⭐⭐⭐⭐ (Foarte Bun)</option>
+            <option value="3">⭐⭐⭐ (Bun)</option>
+        </select>
+        <textarea id="revText" placeholder="Spune-ne părerea ta..."></textarea>
+        <button class="btn-p" onclick="window.postReview()">Postează Recenzia</button>
+    </div>
+
+    <div id="reviewsList">
+        </div>
+</section>
+
 <div id="authModal">
     <div class="modal-content">
         <span class="close-btn" onclick="window.closeModal()">&times;</span>
@@ -99,10 +125,9 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    
-    const firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyB9xuQD_cvxult5OoRqnrxFbnV4GRqKyNY",
   authDomain: "vice-service.firebaseapp.com",
   projectId: "vice-service",
@@ -117,35 +142,22 @@
     const db = getFirestore(app);
 
     let isSignUp = false;
+    let currentUserData = null;
 
     window.openModal = () => document.getElementById('authModal').style.display = 'flex';
     window.closeModal = () => document.getElementById('authModal').style.display = 'none';
 
     window.toggleAuth = () => {
         isSignUp = !isSignUp;
-        const title = document.getElementById('m-title');
-        const btn = document.getElementById('m-btn');
-        const toggle = document.getElementById('m-toggle');
-        const userField = document.getElementById('regUser');
-
-        if (isSignUp) {
-            title.innerText = "Sign Up";
-            btn.innerText = "Creează Cont";
-            toggle.innerText = "Ai deja cont? Autentifică-te";
-            userField.style.display = "block";
-        } else {
-            title.innerText = "Login";
-            btn.innerText = "Intră în cont";
-            toggle.innerText = "Nu ai cont? Creează unul";
-            userField.style.display = "none";
-        }
+        document.getElementById('m-title').innerText = isSignUp ? "Sign Up" : "Login";
+        document.getElementById('regUser').style.display = isSignUp ? "block" : "none";
+        document.getElementById('m-btn').innerText = isSignUp ? "Creează Cont" : "Intră în cont";
     };
 
     window.handleAuth = async () => {
         const email = document.getElementById('uEmail').value;
         const pass = document.getElementById('uPass').value;
         const username = document.getElementById('regUser').value;
-
         try {
             if (isSignUp) {
                 const res = await createUserWithEmailAndPassword(auth, email, pass);
@@ -161,28 +173,68 @@
 
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            document.getElementById('hero').style.display = 'none';
+            const snap = await getDoc(doc(db, "users", user.uid));
+            currentUserData = snap.exists() ? snap.data() : { username: "Client" };
+            
             document.getElementById('loginNavBtn').style.display = 'none';
+            document.getElementById('reviewForm').style.display = 'block'; // Users can now post
+
             if (user.email === "mariooncica@yahoo.com") {
                 showAdmin();
             } else {
-                const snap = await getDoc(doc(db, "users", user.uid));
                 document.getElementById('userDash').style.display = 'block';
-                document.getElementById('greetText').innerText = "Salut, " + (snap.exists() ? snap.data().username : "Client");
+                document.getElementById('greetText').innerText = "Salut, " + currentUserData.username;
                 listenOrder(user.uid);
             }
         }
+        loadReviews();
     });
 
+    // 📱 PLACE ORDER & OPEN WHATSAPP
     window.placeOrder = async (type) => {
         if (!auth.currentUser) return window.openModal();
-        const user = auth.currentUser;
-        const snap = await getDoc(doc(db, "users", user.uid));
-        await setDoc(doc(db, "orders", user.uid), {
-            type, username: snap.exists() ? snap.data().username : "Client", status: "În Lucru"
+        
+        await setDoc(doc(db, "orders", auth.currentUser.uid), {
+            type, username: currentUserData.username, status: "În Lucru", timestamp: Date.now()
         });
-        alert("Comandă plasată cu succes!");
+
+        const phone = "407XXXXXXXX"; // PUT YOUR REAL PHONE NUMBER HERE (ex: 40712345678)
+        const message = `Salut Mario! Sunt ${currentUserData.username} și aș vrea să programez: ${type}.`;
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
     };
+
+    // ⭐ POST REVIEW
+    window.postReview = async () => {
+        const text = document.getElementById('revText').value;
+        const stars = document.getElementById('revStars').value;
+        if(!text) return alert("Scrie ceva în recenzie!");
+
+        await addDoc(collection(db, "reviews"), {
+            username: currentUserData.username,
+            text: text,
+            stars: stars,
+            timestamp: Date.now()
+        });
+        document.getElementById('revText').value = "";
+        alert("Recenzie adăugată!");
+    };
+
+    function loadReviews() {
+        const q = query(collection(db, "reviews"), orderBy("timestamp", "desc"));
+        onSnapshot(q, (snap) => {
+            const list = document.getElementById('reviewsList');
+            list.innerHTML = "";
+            snap.forEach(d => {
+                const r = d.data();
+                list.innerHTML += `
+                    <div class="review-box">
+                        <div class="stars">${"⭐".repeat(r.stars)}</div>
+                        <p>"${r.text}"</p>
+                        <small style="color:var(--primary)">- ${r.username}</small>
+                    </div>`;
+            });
+        });
+    }
 
     function listenOrder(uid) {
         onSnapshot(doc(db, "orders", uid), (d) => {
@@ -190,8 +242,7 @@
                 const o = d.data();
                 const badge = o.status === 'Finalizat' ? 'bg-done' : 'bg-work';
                 document.getElementById('activeOrderContainer').innerHTML = `
-                    <p>Serviciu activ: <strong>${o.type}</strong></p>
-                    <span class="badge ${badge}">${o.status}</span>`;
+                    <p>Status Reparatie (${o.type}): <span class="badge ${badge}">${o.status}</span></p>`;
             }
         });
     }
@@ -203,9 +254,9 @@
             list.innerHTML = "";
             snap.forEach(d => {
                 const o = d.data();
-                list.innerHTML += `<div style="padding:15px; border-bottom:1px solid #222; display:flex; justify-content:space-between; align-items:center;">
-                    <span><strong>${o.username}</strong>: ${o.type} (${o.status})</span>
-                    <button onclick="window.finish('${d.id}')" style="background:var(--secondary); border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">FINALIZAT</button>
+                list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #222; display:flex; justify-content:space-between; align-items:center;">
+                    <span>${o.username}: ${o.type}</span>
+                    <button onclick="window.finish('${d.id}')" style="background:var(--secondary); border:none; padding:5px; border-radius:4px; cursor:pointer;">FINALIZAT</button>
                 </div>`;
             });
         });
