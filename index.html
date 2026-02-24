@@ -12,7 +12,10 @@
         .logo { font-size: 20px; font-weight: 900; color: var(--primary); letter-spacing: 1px; }
         nav a { margin-left: 15px; color: white; text-decoration: none; cursor: pointer; font-size: 13px; }
         
-        /* Toast Notification Styling */
+        /* Floating WhatsApp Button */
+        .wa-float { position: fixed; bottom: 20px; left: 20px; background: #25d366; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 2500; text-decoration: none; transition: 0.3s; }
+        .wa-float:hover { transform: scale(1.1); }
+
         #statusToast { position: fixed; bottom: 20px; right: 20px; background: var(--secondary); color: #000; padding: 15px 25px; border-radius: 12px; font-weight: 800; display: none; z-index: 3000; box-shadow: 0 10px 30px rgba(0,212,255,0.3); animation: slideUp 0.5s ease; }
         @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
@@ -44,6 +47,8 @@
 <body>
 
 <div id="statusToast">✅ Comanda ta este Gata!</div>
+
+<a href="https://wa.me/0786047803" class="wa-float" target="_blank">💬</a>
 
 <header>
     <div class="logo">VICE SERVICE</div>
@@ -173,14 +178,12 @@ const firebaseConfig = {
         loadReviews();
     });
 
-    
     function listenToMyOrder(uid) {
         onSnapshot(doc(db, "orders", uid), (d) => {
             if (d.exists()) {
                 const o = d.data();
                 const statusDiv = document.getElementById('userOrderStatus');
                 statusDiv.innerHTML = `<p style="font-size:13px; color:#888;">Status Comandă: <b style="color:var(--secondary)">${o.status}</b></p>`;
-                
                 if(o.status === "Gata") {
                     const toast = document.getElementById('statusToast');
                     toast.style.display = 'block';
@@ -190,12 +193,15 @@ const firebaseConfig = {
         });
     }
 
+    // UPDATED PLACE ORDER LOGIC
     window.placeOrder = async (type) => {
         let name = currentUserData ? currentUserData.username : prompt("Numele tău:");
         if(!name) return;
         const orderId = auth.currentUser ? auth.currentUser.uid : "g_" + Date.now();
         await setDoc(doc(db, "orders", orderId), { type, username: name, status: "În Lucru", timestamp: Date.now() });
-        window.open(`https://wa.me/078047803?text=Salut! Sunt ${name} și vreau: ${type}`, '_blank');
+        
+        const message = encodeURIComponent(`Salut! Sunt ${name} și vreau: ${type}`);
+        window.open(`https://wa.me/0786047803?text=${message}`, '_blank');
     };
 
     window.previewImage = (input) => {
@@ -213,9 +219,7 @@ const firebaseConfig = {
         const stars = document.getElementById('revStars').value;
         const file = document.getElementById('revImg').files[0];
         if(!text) return;
-        
         document.getElementById('postBtn').innerText = "Se încarcă...";
-
         if(file) {
             const reader = new FileReader();
             reader.readAsDataURL(file);
