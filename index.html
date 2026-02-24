@@ -12,9 +12,9 @@
         .logo { font-size: 20px; font-weight: 900; color: var(--primary); letter-spacing: 1px; }
         nav a { margin-left: 15px; color: white; text-decoration: none; cursor: pointer; font-size: 13px; }
         
-        /* Floating WhatsApp Button */
         .wa-float { position: fixed; bottom: 20px; left: 20px; background: #25d366; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 2500; text-decoration: none; transition: 0.3s; }
-        .wa-float:hover { transform: scale(1.1); }
+        .wa-pop { animation: wa-bounce 0.5s ease infinite alternate; }
+        @keyframes wa-bounce { from { transform: scale(1); } to { transform: scale(1.2); } }
 
         #statusToast { position: fixed; bottom: 20px; right: 20px; background: var(--secondary); color: #000; padding: 15px 25px; border-radius: 12px; font-weight: 800; display: none; z-index: 3000; box-shadow: 0 10px 30px rgba(0,212,255,0.3); animation: slideUp 0.5s ease; }
         @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -23,24 +23,27 @@
         .hero h1 { font-size: 2.5rem; margin: 0; background: linear-gradient(to right, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
         .services { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; padding: 40px 5%; }
-        .price-card { background: var(--card); padding: 30px 20px; border-radius: 20px; border: 1px solid #222; text-align: center; transition: 0.3s; }
+        .price-card { background: var(--card); padding: 30px 20px; border-radius: 20px; border: 1px solid #222; text-align: center; transition: 0.3s; display: flex; flex-direction: column; justify-content: space-between; }
         .price-card:hover { border-color: var(--primary); transform: translateY(-5px); }
-        .price-card .cost { font-size: 2.2rem; font-weight: 800; color: var(--secondary); margin: 15px 0; }
+        .price-card .cost { font-size: 1.8rem; font-weight: 800; color: var(--secondary); margin: 10px 0; }
+        .price-disclaimer { font-size: 11px; color: #777; margin: 10px 0; line-height: 1.4; }
 
         .reviews-section { padding: 60px 5%; background: #080808; }
         .review-box { background: var(--card); padding: 20px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #222; }
         .review-img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 12px; margin-top: 12px; border: 1px solid #333; }
         .review-form { background: #111; padding: 20px; border-radius: 20px; margin-bottom: 30px; border: 1px solid var(--primary); display: none; }
 
-        #imgPreview { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; display: none; margin: 10px 0; border: 1px solid var(--primary); }
         .panel { background: #111; padding: 25px; border-radius: 20px; border: 1px solid var(--primary); margin: 100px 5% 20px; display: none; }
         .btn-p { background: var(--primary); color: white; border: none; padding: 14px; cursor: pointer; font-weight: bold; border-radius: 8px; width: 100%; transition: 0.3s; margin-top: 10px; }
         
-        #authModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; justify-content:center; align-items:center; padding: 20px; }
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; justify-content:center; align-items:center; padding: 20px; }
         .modal-content { background:#161616; padding:30px; border-radius:24px; border: 1px solid #333; width:100%; max-width:320px; text-align:center; position: relative; }
         .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #555; }
         input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; background: #000; border: 1px solid #333; color: white; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
         
+        footer { padding: 40px 5%; background: #050505; border-top: 1px solid #222; text-align: center; margin-top: 40px; }
+        .footer-note { font-size: 12px; color: #444; max-width: 600px; margin: 0 auto; line-height: 1.6; }
+
         @media (max-width: 600px) { .hero h1 { font-size: 1.8rem; } header { width: 100%; padding: 15px 15px; box-sizing: border-box; } }
     </style>
 </head>
@@ -48,7 +51,7 @@
 
 <div id="statusToast">✅ Comanda ta este Gata!</div>
 
-<a href="https://wa.me/0786047803" class="wa-float" target="_blank">💬</a>
+<a href="https://wa.me/0786047803" class="wa-float" id="mainWA" target="_blank">💬</a>
 
 <header>
     <div class="logo">VICE SERVICE</div>
@@ -58,6 +61,19 @@
         <a onclick="window.openModal()" id="loginNavBtn" style="color: var(--primary); border: 1px solid; padding: 4px 10px; border-radius: 5px;">Login / Recenzii</a>
     </nav>
 </header>
+
+<div id="bookingModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="document.getElementById('bookingModal').style.display='none'">&times;</span>
+        <h2 style="color:var(--secondary)">Detalii Reparație</h2>
+        <p style="font-size: 11px; color: #ff4757; font-weight: bold;">
+            ⚠️ Atenție: Prețul final = Manoperă + Cost Componente.
+        </p>
+        <input type="text" id="orderModel" placeholder="Ex: iPhone 13, PS5, Laptop ASUS">
+        <textarea id="orderNotes" placeholder="Descrie problema pe scurt..."></textarea>
+        <button class="btn-p" id="confirmOrderBtn">Trimite pe WhatsApp</button>
+    </div>
+</div>
 
 <div class="panel" id="adminPanel" style="border-color: var(--admin);">
     <h2 style="color: var(--admin); font-size: 1.2rem;">Admin: Panou Comenzi</h2>
@@ -77,9 +93,35 @@
 </section>
 
 <section class="services" id="services">
-    <div class="price-card"><h3>Schimb Baterie</h3><div class="cost">75 <span>RON</span></div><button class="btn-p" onclick="window.placeOrder('Schimb Baterie')">Comandă Acum</button></div>
-    <div class="price-card"><h3>Schimb Ecran</h3><div class="cost">100 <span>RON</span></div><button class="btn-p" onclick="window.placeOrder('Schimb Ecran')">Comandă Acum</button></div>
-    <div class="price-card"><h3>Mentenanță PC</h3><div class="cost">150 <span>RON</span></div><button class="btn-p" onclick="window.placeOrder('Mentenanță PC')">Comandă Acum</button></div>
+    <div class="price-card">
+        <h3>Telefoane</h3>
+        <div class="cost">de la 75 <span>RON</span></div>
+        <p class="price-disclaimer">
+            *Prețul afișat reprezintă <b>manopera</b>.<br>
+            *Costul componentelor <b>nu</b> este inclus.
+        </p>
+        <button class="btn-p" onclick="window.initiateBooking('Reparație Telefon')">Comandă Acum</button>
+    </div>
+
+    <div class="price-card">
+        <h3>Laptop / PC</h3>
+        <div class="cost">de la 100 <span>RON</span></div>
+        <p class="price-disclaimer">
+            *Prețul afișat reprezintă <b>manopera</b>.<br>
+            *Costul componentelor <b>nu</b> este inclus.
+        </p>
+        <button class="btn-p" onclick="window.initiateBooking('Reparație Laptop/PC')">Comandă Acum</button>
+    </div>
+
+    <div class="price-card">
+        <h3>Console</h3>
+        <div class="cost">de la 150 <span>RON</span></div>
+        <p class="price-disclaimer">
+            *Prețul afișat reprezintă <b>manopera</b>.<br>
+            *Costul componentelor <b>nu</b> este inclus.
+        </p>
+        <button class="btn-p" onclick="window.initiateBooking('Reparație Consolă')">Comandă Acum</button>
+    </div>
 </section>
 
 <section class="reviews-section" id="reviews">
@@ -89,13 +131,13 @@
         <select id="revStars"><option value="5">⭐⭐⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option></select>
         <textarea id="revText" placeholder="Cum a decurs reparația?"></textarea>
         <label style="font-size: 12px; color: var(--secondary); cursor: pointer;">+ Adaugă Poză<input type="file" id="revImg" accept="image/*" style="display:none;" onchange="window.previewImage(this)"></label>
-        <center><img id="imgPreview"></center>
+        <center><img id="imgPreview" style="width: 80px; height: 80px; object-fit: cover; display:none; margin:10px; border:1px solid var(--primary); border-radius:8px;"></center>
         <button class="btn-p" id="postBtn" onclick="window.postReview()">Postează</button>
     </div>
     <div id="reviewsList"></div>
 </section>
 
-<div id="authModal">
+<div id="authModal" class="modal">
     <div class="modal-content">
         <span class="close-btn" onclick="window.closeModal()">&times;</span>
         <h2 id="m-title">Autentificare</h2>
@@ -104,16 +146,22 @@
         <input type="password" id="uPass" placeholder="Parola">
         <button class="btn-p" id="m-btn" onclick="window.handleAuth()">Intră în cont</button>
         <p id="m-toggle" style="font-size:12px; color:var(--secondary); cursor:pointer; margin-top:15px;" onclick="window.toggleAuth()">Nu ai cont? Creează unul</p>
-        <p onclick="window.resetPass()" style="font-size:11px; color:#ff4757; cursor:pointer; margin-top:10px;">Ai uitat parola?</p>
     </div>
 </div>
 
+<footer>
+    <div class="footer-note">
+        &copy; 2026 Vice Service. Toate drepturile rezervate.<br>
+        Tarifele afișate sunt puncte de plecare pentru manoperă. Devizul final se stabilește după diagnosticare și include prețul pieselor de schimb necesare.
+    </div>
+</footer>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-const firebaseConfig = {
+   const firebaseConfig = {
   apiKey: "AIzaSyB9xuQD_cvxult5OoRqnrxFbnV4GRqKyNY",
   authDomain: "vice-service.firebaseapp.com",
   projectId: "vice-service",
@@ -129,22 +177,57 @@ const firebaseConfig = {
 
     let isSignUp = false;
     let currentUserData = null;
+    let activeServiceType = "";
 
     window.openModal = () => document.getElementById('authModal').style.display = 'flex';
     window.closeModal = () => document.getElementById('authModal').style.display = 'none';
+
+    window.initiateBooking = (type) => {
+        activeServiceType = type;
+        document.getElementById('bookingModal').style.display = 'flex';
+        document.getElementById('mainWA').classList.add('wa-pop');
+    };
+
+    document.getElementById('confirmOrderBtn').onclick = async () => {
+        const model = document.getElementById('orderModel').value;
+        const notes = document.getElementById('orderNotes').value;
+        
+        if(!model) return alert("Introdu modelul dispozitivului!");
+
+        let name = currentUserData ? currentUserData.username : prompt("Numele tău:");
+        if(!name) return;
+
+        const orderId = auth.currentUser ? auth.currentUser.uid : "g_" + Date.now();
+        
+        // Save to Firebase
+        await setDoc(doc(db, "orders", orderId), { 
+            type: activeServiceType, 
+            model: model,
+            username: name, 
+            status: "În Lucru", 
+            timestamp: Date.now() 
+        });
+
+        // WhatsApp redirect with explicit disclaimer
+        const message = encodeURIComponent(
+            `Salut! Sunt ${name}.\n` +
+            `Dispozitiv: ${activeServiceType}\n` +
+            `Model: ${model}\n` +
+            `Problemă: ${notes}\n\n` +
+            `*Sunt de acord că prețul componentelor se achită separat de manoperă.*`
+        );
+        
+        window.open(`https://wa.me/0786047803?text=${message}`, '_blank');
+        
+        document.getElementById('bookingModal').style.display = 'none';
+        document.getElementById('mainWA').classList.remove('wa-pop');
+    };
 
     window.toggleAuth = () => {
         isSignUp = !isSignUp;
         document.getElementById('m-title').innerText = isSignUp ? "Cont Nou" : "Autentificare";
         document.getElementById('regUser').style.display = isSignUp ? "block" : "none";
         document.getElementById('m-btn').innerText = isSignUp ? "Creează Cont" : "Intră în cont";
-    };
-
-    window.resetPass = async () => {
-        const email = document.getElementById('uEmail').value;
-        if(!email) return alert("Scrie email-ul!");
-        await sendPasswordResetEmail(auth, email);
-        alert("Link trimis pe email!");
     };
 
     window.handleAuth = async () => {
@@ -172,44 +255,16 @@ const firebaseConfig = {
             else {
                 document.getElementById('userDash').style.display = 'block';
                 document.getElementById('greetText').innerText = "Salut, " + currentUserData.username;
-                listenToMyOrder(user.uid);
             }
         }
         loadReviews();
     });
 
-    function listenToMyOrder(uid) {
-        onSnapshot(doc(db, "orders", uid), (d) => {
-            if (d.exists()) {
-                const o = d.data();
-                const statusDiv = document.getElementById('userOrderStatus');
-                statusDiv.innerHTML = `<p style="font-size:13px; color:#888;">Status Comandă: <b style="color:var(--secondary)">${o.status}</b></p>`;
-                if(o.status === "Gata") {
-                    const toast = document.getElementById('statusToast');
-                    toast.style.display = 'block';
-                    setTimeout(() => { toast.style.display = 'none'; }, 5000);
-                }
-            }
-        });
-    }
-
-    // UPDATED PLACE ORDER LOGIC
-    window.placeOrder = async (type) => {
-        let name = currentUserData ? currentUserData.username : prompt("Numele tău:");
-        if(!name) return;
-        const orderId = auth.currentUser ? auth.currentUser.uid : "g_" + Date.now();
-        await setDoc(doc(db, "orders", orderId), { type, username: name, status: "În Lucru", timestamp: Date.now() });
-        
-        const message = encodeURIComponent(`Salut! Sunt ${name} și vreau: ${type}`);
-        window.open(`https://wa.me/0786047803?text=${message}`, '_blank');
-    };
-
     window.previewImage = (input) => {
         const reader = new FileReader();
         reader.onload = (e) => { 
             const img = document.getElementById('imgPreview');
-            img.src = e.target.result; 
-            img.style.display = 'block'; 
+            img.src = e.target.result; img.style.display = 'block'; 
         };
         reader.readAsDataURL(input.files[0]);
     };
@@ -219,7 +274,6 @@ const firebaseConfig = {
         const stars = document.getElementById('revStars').value;
         const file = document.getElementById('revImg').files[0];
         if(!text) return;
-        document.getElementById('postBtn').innerText = "Se încarcă...";
         if(file) {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -228,10 +282,8 @@ const firebaseConfig = {
                 img.src = event.target.result;
                 img.onload = async () => {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 600;
-                    const scaleSize = MAX_WIDTH / img.width;
-                    canvas.width = MAX_WIDTH;
-                    canvas.height = img.height * scaleSize;
+                    const scaleSize = 600 / img.width;
+                    canvas.width = 600; canvas.height = img.height * scaleSize;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     await saveReview(text, stars, canvas.toDataURL('image/jpeg', 0.6));
@@ -268,9 +320,9 @@ const firebaseConfig = {
             list.innerHTML = "";
             snap.forEach(d => {
                 const o = d.data();
-                list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #222; display:flex; justify-content:space-between; align-items:center;">
-                    <span>${o.username}: <b>${o.type}</b></span>
-                    <button onclick="window.finish('${d.id}')" style="background:var(--secondary); border:none; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer;">OK (GATA)</button>
+                list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #222;">
+                    <span>${o.username}: <b>${o.type}</b> (${o.model})</span>
+                    <button onclick="window.finish('${d.id}')" style="background:var(--secondary); border:none; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer;">GATA</button>
                 </div>`;
             });
         });
