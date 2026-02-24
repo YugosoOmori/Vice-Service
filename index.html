@@ -69,6 +69,7 @@
         <p style="font-size: 11px; color: #ff4757; font-weight: bold;">
             ⚠️ Atenție: Prețul final = Manoperă + Cost Componente.
         </p>
+        <input type="text" id="orderName" placeholder="Numele tău">
         <input type="text" id="orderModel" placeholder="Ex: iPhone 13, PS5, Laptop ASUS">
         <textarea id="orderNotes" placeholder="Descrie problema pe scurt..."></textarea>
         <button class="btn-p" id="confirmOrderBtn">Trimite pe WhatsApp</button>
@@ -161,7 +162,7 @@
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-   const firebaseConfig = {
+    const firebaseConfig = {
   apiKey: "AIzaSyB9xuQD_cvxult5OoRqnrxFbnV4GRqKyNY",
   authDomain: "vice-service.firebaseapp.com",
   projectId: "vice-service",
@@ -185,42 +186,54 @@
     window.initiateBooking = (type) => {
         activeServiceType = type;
         document.getElementById('bookingModal').style.display = 'flex';
+        // Auto-fill name if user is logged in
+        if (currentUserData) {
+            document.getElementById('orderName').value = currentUserData.username;
+            document.getElementById('orderName').style.display = 'none';
+        } else {
+            document.getElementById('orderName').style.display = 'block';
+        }
         document.getElementById('mainWA').classList.add('wa-pop');
     };
 
+    // Unified Booking logic
     document.getElementById('confirmOrderBtn').onclick = async () => {
         const model = document.getElementById('orderModel').value;
         const notes = document.getElementById('orderNotes').value;
+        const nameInput = document.getElementById('orderName').value;
+        const name = currentUserData ? currentUserData.username : nameInput;
         
+        if(!name) return alert("Te rugăm să introduci numele!");
         if(!model) return alert("Introdu modelul dispozitivului!");
-
-        let name = currentUserData ? currentUserData.username : prompt("Numele tău:");
-        if(!name) return;
 
         const orderId = auth.currentUser ? auth.currentUser.uid : "g_" + Date.now();
         
-        // Save to Firebase
-        await setDoc(doc(db, "orders", orderId), { 
-            type: activeServiceType, 
-            model: model,
-            username: name, 
-            status: "În Lucru", 
-            timestamp: Date.now() 
-        });
+        try {
+            // Save to Firebase
+            await setDoc(doc(db, "orders", orderId), { 
+                type: activeServiceType, 
+                model: model,
+                username: name, 
+                status: "În Lucru", 
+                timestamp: Date.now() 
+            });
 
-        // WhatsApp redirect with explicit disclaimer
-        const message = encodeURIComponent(
-            `Salut! Sunt ${name}.\n` +
-            `Dispozitiv: ${activeServiceType}\n` +
-            `Model: ${model}\n` +
-            `Problemă: ${notes}\n\n` +
-            `*Sunt de acord că prețul componentelor se achită separat de manoperă.*`
-        );
-        
-        window.open(`https://wa.me/0786047803?text=${message}`, '_blank');
-        
-        document.getElementById('bookingModal').style.display = 'none';
-        document.getElementById('mainWA').classList.remove('wa-pop');
+            const message = encodeURIComponent(
+                `Salut! Sunt ${name}.\n` +
+                `Dispozitiv: ${activeServiceType}\n` +
+                `Model: ${model}\n` +
+                `Problemă: ${notes}\n\n` +
+                `*Sunt de acord că prețul componentelor se achită separat de manoperă.*`
+            );
+            
+            window.open(`https://wa.me/0786047803?text=${message}`, '_blank');
+            
+            document.getElementById('bookingModal').style.display = 'none';
+            document.getElementById('mainWA').classList.remove('wa-pop');
+        } catch (e) {
+            console.error("Error saving order: ", e);
+            alert("A apărut o eroare. Te rugăm să încerci din nou.");
+        }
     };
 
     window.toggleAuth = () => {
