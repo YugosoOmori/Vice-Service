@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vice Service | Tech Solutions</title>
+    <style>
+        :root { --primary: #8a2be2; --secondary: #00d4ff; --bg: #0a0a0a; --card: #121212; --admin: #ff4757; --whatsapp: #25D366; }
+        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg); color: white; scroll-behavior: smooth; }
+        
+        header { padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; background: rgba(10, 10, 10, 0.98); position: fixed; width: 90%; top: 0; z-index: 1000; border-bottom: 1px solid #222; }
+        .logo { font-size: 22px; font-weight: 900; color: var(--primary); letter-spacing: 1px; }
+        
+        .hero { text-align: center; padding: 180px 10% 80px; background: radial-gradient(circle at top, #1a1a2e 0%, #0a0a0a 100%); }
+        .hero h1 { font-size: 3.5rem; margin: 0; letter-spacing: -1px; background: linear-gradient(to right, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .services { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 25px; padding: 50px 10%; }
+        .price-card { background: var(--card); padding: 40px 30px; border-radius: 20px; border: 1px solid #222; text-align: center; transition: 0.4s; }
+        .price-card:hover { border-color: var(--primary); transform: translateY(-5px); }
+        .price-card .cost { font-size: 2.5rem; font-weight: 800; color: var(--secondary); margin: 20px 0; }
+
+        .panel { background: #111; padding: 40px; border-radius: 20px; border: 1px solid var(--primary); margin: 120px 10% 20px; display: none; }
+        .btn-p { background: var(--primary); color: white; border: none; padding: 14px; cursor: pointer; font-weight: bold; border-radius: 8px; width: 100%; transition: 0.3s; }
+
+        #authModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.96); z-index:2000; justify-content:center; align-items:center; }
+        .modal-content { background:#161616; padding:40px; border-radius:24px; border: 1px solid #333; width:320px; text-align:center; }
+        input { width: 100%; padding: 15px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 10px; box-sizing: border-box; }
+        
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; border: 1px solid; }
+        .bg-work { color: var(--secondary); border-color: var(--secondary); }
+        .bg-done { color: #2ecc71; border-color: #2ecc71; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">VICE SERVICE</div>
+    <nav>
+        <a onclick="window.openModal()" id="loginNavBtn" style="color: var(--primary); cursor:pointer; border: 1px solid; padding: 5px 15px; border-radius: 5px;">Cont Client</a>
+    </nav>
+</header>
+
+<div class="panel" id="adminPanel" style="border-color: var(--admin);">
+    <h2 style="color: var(--admin);">Admin Panel</h2>
+    <div id="adminOrderList"></div>
+    <button onclick="window.logOut()" style="color:#555; background:none; border:none; cursor:pointer; margin-top:20px;">Logout</button>
+</div>
+
+<div class="panel" id="userDash">
+    <h2 id="greetText">Salut!</h2>
+    <div id="activeOrderContainer"></div>
+    <button onclick="window.logOut()" style="color:#555; background:none; border:none; cursor:pointer; margin-top:15px;">Logout</button>
+</div>
+
+<section class="hero" id="hero">
+    <h1>Expertiza ta în Tech.</h1>
+    <p>Reparații hardware profesionale de înaltă precizie.</p>
+</section>
+
+<section class="services" id="services">
+    <div class="price-card">
+        <h3>Baterie</h3>
+        <div class="cost">75 <span>RON</span></div>
+        <button class="btn-p" onclick="window.placeOrder('Schimb Baterie')">Book Now</button>
+    </div>
+    <div class="price-card">
+        <h3>Ecran</h3>
+        <div class="cost">100 <span>RON</span></div>
+        <button class="btn-p" onclick="window.placeOrder('Schimb Ecran')">Book Now</button>
+    </div>
+</section>
+
+<div id="authModal">
+    <div class="modal-content">
+        <h2 id="m-title">Login</h2>
+        <input type="text" id="regUser" placeholder="Nume utilizator" style="display:none;">
+        <input type="email" id="uEmail" placeholder="Email">
+        <input type="password" id="uPass" placeholder="Parola">
+        <button class="btn-p" id="m-btn" onclick="window.handleAuth()">Intră în cont</button>
+        <p id="m-toggle" style="font-size:12px; color:var(--secondary); cursor:pointer; margin-top:20px;" onclick="window.toggleAuth()">Nu ai cont? Creează unul</p>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // PASTE YOUR CONFIG FROM FIREBASE PROJECT SETTINGS HERE
+   const firebaseConfig = {
+  apiKey: "AIzaSyB9xuQD_cvxult5OoRqnrxFbnV4GRqKyNY",
+  authDomain: "vice-service.firebaseapp.com",
+  projectId: "vice-service",
+  storageBucket: "vice-service.firebasestorage.app",
+  messagingSenderId: "17358293881",
+  appId: "1:17358293881:web:7691b91c7d7f0a65bffda8",
+  measurementId: "G-20WM0K9WBL"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let isSignUp = false;
+
+    window.openModal = () => document.getElementById('authModal').style.display = 'flex';
+    window.closeModal = () => document.getElementById('authModal').style.display = 'none';
+
+    // FIXED TOGGLE LOGIC BASED ON YOUR SCREENSHOTS
+    window.toggleAuth = () => {
+        isSignUp = !isSignUp;
+        const title = document.getElementById('m-title');
+        const btn = document.getElementById('m-btn');
+        const toggle = document.getElementById('m-toggle');
+        const userField = document.getElementById('regUser');
+
+        if (isSignUp) {
+            title.innerText = "Sign Up";
+            btn.innerText = "Creează Cont";
+            toggle.innerText = "Ai deja cont? Autentifică-te";
+            userField.style.display = "block";
+        } else {
+            title.innerText = "Login";
+            btn.innerText = "Intră în cont";
+            toggle.innerText = "Nu ai cont? Creează unul";
+            userField.style.display = "none";
+        }
+    };
+
+    window.handleAuth = async () => {
+        const email = document.getElementById('uEmail').value;
+        const pass = document.getElementById('uPass').value;
+        const username = document.getElementById('regUser').value;
+
+        try {
+            if (isSignUp) {
+                const res = await createUserWithEmailAndPassword(auth, email, pass);
+                await setDoc(doc(db, "users", res.user.uid), { username: username });
+            } else {
+                await signInWithEmailAndPassword(auth, email, pass);
+            }
+            window.closeModal();
+        } catch (e) { alert(e.message); }
+    };
+
+    window.logOut = () => signOut(auth).then(() => location.reload());
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            document.getElementById('hero').style.display = 'none';
+            document.getElementById('loginNavBtn').style.display = 'none';
+            if (user.email === "mariooncica@yahoo.com") {
+                showAdmin();
+            } else {
+                const snap = await getDoc(doc(db, "users", user.uid));
+                document.getElementById('userDash').style.display = 'block';
+                document.getElementById('greetText').innerText = "Salut, " + (snap.exists() ? snap.data().username : "Client");
+                listenOrder(user.uid);
+            }
+        }
+    });
+
+    window.placeOrder = async (type) => {
+        if (!auth.currentUser) return window.openModal();
+        const user = auth.currentUser;
+        const snap = await getDoc(doc(db, "users", user.uid));
+        await setDoc(doc(db, "orders", user.uid), {
+            type, username: snap.data().username, status: "În Lucru"
+        });
+    };
+
+    function listenOrder(uid) {
+        onSnapshot(doc(db, "orders", uid), (d) => {
+            if (d.exists()) {
+                const o = d.data();
+                const badge = o.status === 'Finalizat' ? 'bg-done' : 'bg-work';
+                document.getElementById('activeOrderContainer').innerHTML = `
+                    <p>Serviciu: <strong>${o.type}</strong></p>
+                    <span class="badge ${badge}">${o.status}</span>`;
+            }
+        });
+    }
+
+    function showAdmin() {
+        document.getElementById('adminPanel').style.display = 'block';
+        onSnapshot(collection(db, "orders"), (snap) => {
+            const list = document.getElementById('adminOrderList');
+            list.innerHTML = "";
+            snap.forEach(d => {
+                const o = d.data();
+                list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #222; display:flex; justify-content:space-between;">
+                    <span>${o.username}: ${o.type}</span>
+                    <button onclick="window.finish('${d.id}')" style="background:var(--secondary); border:none; border-radius:4px; cursor:pointer;">FINALIZAT</button>
+                </div>`;
+            });
+        });
+    }
+
+    window.finish = async (id) => {
+        await updateDoc(doc(db, "orders", id), { status: "Finalizat" });
+    };
+</script>
+</body>
+</html>
